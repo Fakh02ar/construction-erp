@@ -30,8 +30,17 @@ export function DashboardLayout({ children, userProfile }: DashboardLayoutProps)
   const [sidebarOpen, setSidebarOpen] = useState(true)
 
   const handleLogout = async () => {
-    const supabase = createClient()
-    await supabase.auth.signOut()
+    // Clear demo mode
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('demo_mode')
+    }
+    
+    try {
+      const supabase = createClient()
+      await supabase.auth.signOut()
+    } catch (error) {
+      console.error('Logout error:', error)
+    }
     router.push('/auth/login')
   }
 

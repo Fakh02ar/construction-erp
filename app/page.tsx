@@ -10,19 +10,24 @@ export default function Home() {
   useEffect(() => {
     async function checkAuth() {
       try {
-        const supabase = createClient()
-        const {
-          data: { user },
-        } = await supabase.auth.getUser()
+        // DEMO MODE: Redirect straight to dashboard
+        router.push('/dashboard')
+        return
 
-        if (user) {
-          router.push('/dashboard')
-        } else {
-          router.push('/auth/login')
-        }
+        // Production auth check (commented out for demo)
+        // const supabase = createClient()
+        // const {
+        //   data: { user },
+        // } = await supabase.auth.getUser()
+        //
+        // if (user) {
+        //   router.push('/dashboard')
+        // } else {
+        //   router.push('/auth/login')
+        // }
       } catch (error) {
         console.error('Auth check failed:', error)
-        router.push('/auth/login')
+        router.push('/dashboard')
       }
     }
 

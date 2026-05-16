@@ -42,6 +42,25 @@ export default function Page() {
     }
   }
 
+  const handleDemoLogin = async () => {
+    setIsLoading(true)
+    setError(null)
+    // Demo mode - set cookie and redirect to dashboard
+    try {
+      // Set demo_mode cookie via API call
+      document.cookie = 'demo_mode=true; path=/; max-age=86400'
+      // Also set in localStorage as backup
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('demo_mode', 'true')
+      }
+      await new Promise(resolve => setTimeout(resolve, 300))
+      router.push('/dashboard')
+    } catch (error) {
+      setError('Failed to enable demo mode')
+      setIsLoading(false)
+    }
+  }
+
   return (
     <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10 bg-background">
       <div className="w-full max-w-sm">
@@ -84,6 +103,17 @@ export default function Page() {
                   {error && <p className="text-sm text-red-500">{error}</p>}
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? 'Logging in...' : 'Login'}
+                  </Button>
+                </div>
+                <div className="mt-4 flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={handleDemoLogin}
+                    disabled={isLoading}
+                  >
+                    Demo Mode
                   </Button>
                 </div>
                 <div className="mt-4 text-center text-sm">

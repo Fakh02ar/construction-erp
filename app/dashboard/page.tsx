@@ -14,27 +14,44 @@ export default function DashboardPage() {
 
   useEffect(() => {
     async function checkAuth() {
-      const supabase = createClient()
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      if (!user) {
-        router.push('/auth/login')
-        return
+      // DEMO MODE: Skip auth check and show demo user
+      const demoUser = {
+        id: 'demo-user-123',
+        email: 'demo@example.com',
       }
-
-      setUser(user)
-
-      // Fetch user profile
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
-
-      setUserProfile(profile)
+      const demoProfile = {
+        id: 'demo-user-123',
+        full_name: 'Demo User',
+        email: 'demo@example.com',
+        role: 'admin',
+      }
+      
+      setUser(demoUser)
+      setUserProfile(demoProfile)
       setIsLoading(false)
+      return
+
+      // Production auth check (commented for demo)
+      // const supabase = createClient()
+      // const {
+      //   data: { user },
+      // } = await supabase.auth.getUser()
+      //
+      // if (!user) {
+      //   router.push('/auth/login')
+      //   return
+      // }
+      //
+      // setUser(user)
+      //
+      // const { data: profile } = await supabase
+      //   .from('user_profiles')
+      //   .select('*')
+      //   .eq('id', user.id)
+      //   .single()
+      //
+      // setUserProfile(profile)
+      // setIsLoading(false)
     }
 
     checkAuth()
