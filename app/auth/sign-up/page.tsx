@@ -55,13 +55,17 @@ export default function Page() {
   }
 
   return (
-    <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
+    <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10 bg-background">
       <div className="w-full max-w-sm">
         <div className="flex flex-col gap-6">
+          <div className="text-center mb-4">
+            <h1 className="text-3xl font-bold text-foreground">Construction ERP</h1>
+            <p className="text-muted-foreground mt-2">Project Management & Financial Tracking</p>
+          </div>
           <Card>
             <CardHeader>
-              <CardTitle className="text-2xl">Sign up</CardTitle>
-              <CardDescription>Create a new account</CardDescription>
+              <CardTitle className="text-2xl">Create Account</CardTitle>
+              <CardDescription>Set up your Construction ERP account</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSignUp}>

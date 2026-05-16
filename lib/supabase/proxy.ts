@@ -6,11 +6,16 @@ export async function updateSession(request: NextRequest) {
     request,
   })
 
+  // Skip middleware if Supabase env vars are not set
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    return supabaseResponse
+  }
+
   // With Fluid compute, don't put this client in a global environment
   // variable. Always create a new one on each request.
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
       cookies: {
         getAll() {
@@ -42,8 +47,9 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   if (
-    // if the user is not logged in and the app path, in this case, /protected, is accessed, redirect to the login page
-    request.nextUrl.pathname.startsWith('/protected') &&
+    // if the user is not logged in and the app path, in this case, /protected or /dashboard, is accessed, redirect to the login page
+    (request.nextUrl.pathname.startsWith('/protected') ||
+      request.nextUrl.pathname.startsWith('/dashboard')) &&
     !user
   ) {
     // no user, potentially respond by redirecting the user to the login page

@@ -39,7 +39,7 @@ export default function Page() {
         },
       })
       if (error) throw error
-      router.push('/protected')
+      router.push('/dashboard')
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : 'An error occurred')
     } finally {
@@ -48,14 +48,18 @@ export default function Page() {
   }
 
   return (
-    <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
+    <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10 bg-background">
       <div className="w-full max-w-sm">
         <div className="flex flex-col gap-6">
+          <div className="text-center mb-4">
+            <h1 className="text-3xl font-bold text-foreground">Construction ERP</h1>
+            <p className="text-muted-foreground mt-2">Project Management & Financial Tracking</p>
+          </div>
           <Card>
             <CardHeader>
               <CardTitle className="text-2xl">Login</CardTitle>
               <CardDescription>
-                Enter your email below to login to your account
+                Enter your credentials to access your account
               </CardDescription>
             </CardHeader>
             <CardContent>
