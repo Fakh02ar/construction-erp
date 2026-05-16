@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Plus, Mail, Phone, MapPin } from 'lucide-react'
+import { Plus, Mail, Phone, MapPin, Users } from 'lucide-react'
 
 interface Party {
   id: string
@@ -28,7 +28,14 @@ interface Party {
   address: string
   city: string
   state: string
-  balance: number
+}
+
+const typeColors: { [key: string]: string } = {
+  supplier: 'bg-blue-100 text-blue-800',
+  contractor: 'bg-purple-100 text-purple-800',
+  client: 'bg-green-100 text-green-800',
+  laborer: 'bg-orange-100 text-orange-800',
+  other: 'bg-gray-100 text-gray-800',
 }
 
 export default function PartiesPage() {
@@ -57,7 +64,7 @@ export default function PartiesPage() {
       const { data, error } = await supabase
         .from('parties')
         .select('*')
-        .order('created_at', { ascending: false })
+        .order('name')
 
       if (error) throw error
       setParties(data || [])
@@ -71,16 +78,10 @@ export default function PartiesPage() {
   async function handleCreateParty(e: React.FormEvent) {
     e.preventDefault()
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      if (!user) return
-
       const { error } = await supabase.from('parties').insert([
         {
           ...formData,
-          created_by: user.id,
+          created_by: 'demo-user-123',
         },
       ])
 
@@ -97,68 +98,70 @@ export default function PartiesPage() {
         state: '',
       })
       setIsDialogOpen(false)
-      fetchParties()
+      await fetchParties()
     } catch (error) {
       console.error('Error creating party:', error)
     }
   }
 
-  const partyTypeColors: Record<string, string> = {
-    contractor: 'bg-purple-100 text-purple-800',
-    client: 'bg-blue-100 text-blue-800',
-    supplier: 'bg-green-100 text-green-800',
-    laborer: 'bg-orange-100 text-orange-800',
-  }
+  const partiesByType = parties.reduce(
+    (acc, party) => {
+      if (!acc[party.party_type]) acc[party.party_type] = 0
+      acc[party.party_type]++
+      return acc
+    },
+    {} as Record<string, number>
+  )
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 p-6">
+      {/* Header */}
+      <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Parties</h1>
+          <h1 className="text-3xl font-bold text-foreground">Parties</h1>
           <p className="text-muted-foreground mt-2">Manage contractors, suppliers, clients & laborers</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
-              <Plus size={18} className="mr-2" />
+            <Button className="gap-2">
+              <Plus className="w-4 h-4" />
               Add Party
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
               <DialogTitle>Add New Party</DialogTitle>
-              <DialogDescription>
-                Register a new contractor, supplier, client, or laborer
-              </DialogDescription>
+              <DialogDescription>Add a contractor, supplier, client, or laborer</DialogDescription>
             </DialogHeader>
             <form onSubmit={handleCreateParty} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Name *</Label>
-                  <Input
-                    id="name"
-                    placeholder="Company or person name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="party_type">Type *</Label>
-                  <Select value={formData.party_type} onValueChange={(value) => setFormData({ ...formData, party_type: value })}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="contractor">Contractor</SelectItem>
-                      <SelectItem value="client">Client</SelectItem>
-                      <SelectItem value="supplier">Supplier</SelectItem>
-                      <SelectItem value="laborer">Laborer</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="name">Party Name *</Label>
+                <Input
+                  id="name"
+                  placeholder="Company or person name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  required
+                />
               </div>
-
+              <div className="space-y-2">
+                <Label htmlFor="party_type">Type *</Label>
+                <Select
+                  value={formData.party_type}
+                  onValueChange={(value) => setFormData({ ...formData, party_type: value })}
+                >
+                  <SelectTrigger id="party_type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="supplier">Supplier</SelectItem>
+                    <SelectItem value="contractor">Contractor</SelectItem>
+                    <SelectItem value="client">Client</SelectItem>
+                    <SelectItem value="laborer">Laborer</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="contact_person">Contact Person</Label>
@@ -170,38 +173,34 @@ export default function PartiesPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="email@example.com"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
                   <Label htmlFor="phone">Phone</Label>
                   <Input
                     id="phone"
-                    placeholder="+91 XXXXX XXXXX"
+                    placeholder="+91 9876543210"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="address">Address</Label>
-                  <Input
-                    id="address"
-                    placeholder="Street address"
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  />
-                </div>
               </div>
-
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="email@example.com"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="address">Address</Label>
+                <Input
+                  id="address"
+                  placeholder="Street address"
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                />
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="city">City</Label>
@@ -222,13 +221,8 @@ export default function PartiesPage() {
                   />
                 </div>
               </div>
-
-              <div className="flex justify-end gap-3 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsDialogOpen(false)}
-                >
+              <div className="flex gap-2 justify-end pt-4">
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Cancel
                 </Button>
                 <Button type="submit">Add Party</Button>
@@ -238,59 +232,103 @@ export default function PartiesPage() {
         </Dialog>
       </div>
 
+      {/* Stats Cards */}
+      {Object.keys(partiesByType).length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Parties</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div className="text-3xl font-bold">{parties.length}</div>
+                <Users className="w-8 h-8 text-primary opacity-30" />
+              </div>
+            </CardContent>
+          </Card>
+          {Object.entries(partiesByType).map(([type, count]) => (
+            <Card key={type}>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground capitalize">{type}s</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{count}</div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
       {/* Parties List */}
       {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <p className="text-muted-foreground">Loading parties...</p>
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading parties...</p>
+          </div>
         </div>
       ) : parties.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <p className="text-muted-foreground mb-4">No parties added yet</p>
-            <p className="text-sm text-muted-foreground">Add contractors, suppliers, or clients to get started</p>
+        <Card className="border-dashed">
+          <CardContent className="flex flex-col items-center justify-center h-96">
+            <div className="text-center">
+              <Users className="w-16 h-16 text-muted-foreground opacity-50 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-foreground mb-2">No parties added yet</h3>
+              <p className="text-muted-foreground mb-4">Add contractors, suppliers, or clients to get started</p>
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="gap-2">
+                    <Plus className="w-4 h-4" />
+                    Add Party
+                  </Button>
+                </DialogTrigger>
+              </Dialog>
+            </div>
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
+        <div className="grid gap-4">
           {parties.map((party) => (
-            <Card key={party.id} className="hover:shadow-md transition-shadow">
+            <Card key={party.id} className="hover:shadow-lg transition-shadow">
               <CardContent className="pt-6">
-                <div className="flex items-start justify-between">
+                <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-semibold">{party.name}</h3>
-                      <Badge className={partyTypeColors[party.party_type] || 'bg-gray-100 text-gray-800'}>
+                      <h3 className="text-lg font-semibold text-foreground">{party.name}</h3>
+                      <Badge className={typeColors[party.party_type] || typeColors.other}>
                         {party.party_type}
                       </Badge>
                     </div>
                     {party.contact_person && (
                       <p className="text-sm text-muted-foreground mb-2">Contact: {party.contact_person}</p>
                     )}
-                    <div className="flex flex-wrap gap-4 text-sm">
-                      {party.email && (
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <Mail size={16} />
-                          {party.email}
-                        </div>
-                      )}
+                    <div className="flex flex-wrap gap-4 mt-3">
                       {party.phone && (
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <Phone size={16} />
+                        <span className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Phone className="w-4 h-4" />
                           {party.phone}
-                        </div>
+                        </span>
                       )}
-                      {party.address && (
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <MapPin size={16} />
-                          {party.address}
-                          {party.city && `, ${party.city}`}
-                        </div>
+                      {party.email && (
+                        <span className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Mail className="w-4 h-4" />
+                          {party.email}
+                        </span>
+                      )}
+                      {party.city && (
+                        <span className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <MapPin className="w-4 h-4" />
+                          {party.city}, {party.state}
+                        </span>
                       )}
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm text-muted-foreground">Balance</p>
-                    <p className="text-lg font-semibold">₹{party.balance?.toLocaleString() || '0'}</p>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm">
+                      View
+                    </Button>
+                    <Button variant="outline" size="sm">
+                      Edit
+                    </Button>
                   </div>
                 </div>
               </CardContent>

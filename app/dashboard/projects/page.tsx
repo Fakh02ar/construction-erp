@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Calendar, Plus, Eye, Edit2 } from 'lucide-react'
+import { Plus, Calendar, MapPin, DollarSign } from 'lucide-react'
 
 interface Project {
   id: string
@@ -28,8 +28,14 @@ interface Project {
   end_date: string
   estimated_budget: number
   actual_cost: number
-  client_id: string
-  manager_id: string
+}
+
+const statusColors: { [key: string]: string } = {
+  planning: 'bg-blue-100 text-blue-800',
+  ongoing: 'bg-amber-100 text-amber-800',
+  completed: 'bg-green-100 text-green-800',
+  on_hold: 'bg-gray-100 text-gray-800',
+  cancelled: 'bg-red-100 text-red-800',
 }
 
 export default function ProjectsPage() {
@@ -54,16 +60,9 @@ export default function ProjectsPage() {
 
   async function fetchProjects() {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      if (!user) return
-
       const { data, error } = await supabase
         .from('projects')
         .select('*')
-        .eq('created_by', user.id)
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -78,17 +77,11 @@ export default function ProjectsPage() {
   async function handleCreateProject(e: React.FormEvent) {
     e.preventDefault()
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      if (!user) return
-
       const { error } = await supabase.from('projects').insert([
         {
           ...formData,
-          estimated_budget: parseFloat(formData.estimated_budget),
-          created_by: user.id,
+          estimated_budget: parseFloat(formData.estimated_budget || '0'),
+          created_by: 'demo-user-123',
         },
       ])
 
@@ -104,80 +97,66 @@ export default function ProjectsPage() {
         estimated_budget: '',
       })
       setIsDialogOpen(false)
-      fetchProjects()
+      await fetchProjects()
     } catch (error) {
       console.error('Error creating project:', error)
     }
   }
 
-  const statusColors: Record<string, string> = {
-    planning: 'bg-blue-100 text-blue-800',
-    ongoing: 'bg-green-100 text-green-800',
-    completed: 'bg-gray-100 text-gray-800',
-    on_hold: 'bg-yellow-100 text-yellow-800',
-    cancelled: 'bg-red-100 text-red-800',
-  }
-
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 p-6">
+      {/* Header */}
+      <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Projects</h1>
-          <p className="text-muted-foreground mt-2">Manage your construction projects</p>
+          <h1 className="text-3xl font-bold text-foreground">Projects</h1>
+          <p className="text-muted-foreground mt-2">Manage your construction projects and track progress</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
-              <Plus size={18} className="mr-2" />
+            <Button className="gap-2">
+              <Plus className="w-4 h-4" />
               New Project
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
               <DialogTitle>Create New Project</DialogTitle>
-              <DialogDescription>
-                Add a new construction project to your portfolio
-              </DialogDescription>
+              <DialogDescription>Add a new construction project to track and manage</DialogDescription>
             </DialogHeader>
             <form onSubmit={handleCreateProject} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Project Name *</Label>
-                  <Input
-                    id="name"
-                    placeholder="e.g., Office Building A"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="location">Location *</Label>
-                  <Input
-                    id="location"
-                    placeholder="e.g., New York, NY"
-                    value={formData.location}
-                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                    required
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="name">Project Name</Label>
+                <Input
+                  id="name"
+                  placeholder="e.g., Downtown Mall Construction"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  required
+                />
               </div>
-
               <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
                 <Input
                   id="description"
-                  placeholder="Project details..."
+                  placeholder="Project details"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 />
               </div>
-
+              <div className="space-y-2">
+                <Label htmlFor="location">Location</Label>
+                <Input
+                  id="location"
+                  placeholder="Project location"
+                  value={formData.location}
+                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                />
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="status">Status</Label>
                   <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
-                    <SelectTrigger>
+                    <SelectTrigger id="status">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -190,7 +169,7 @@ export default function ProjectsPage() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="budget">Estimated Budget (₹)</Label>
+                  <Label htmlFor="budget">Est. Budget (₹)</Label>
                   <Input
                     id="budget"
                     type="number"
@@ -200,7 +179,6 @@ export default function ProjectsPage() {
                   />
                 </div>
               </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="start_date">Start Date</Label>
@@ -221,13 +199,8 @@ export default function ProjectsPage() {
                   />
                 </div>
               </div>
-
-              <div className="flex justify-end gap-3 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsDialogOpen(false)}
-                >
+              <div className="flex gap-2 justify-end pt-4">
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Cancel
                 </Button>
                 <Button type="submit">Create Project</Button>
@@ -239,64 +212,68 @@ export default function ProjectsPage() {
 
       {/* Projects Grid */}
       {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <p className="text-muted-foreground">Loading projects...</p>
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading projects...</p>
+          </div>
         </div>
       ) : projects.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <p className="text-muted-foreground mb-4">No projects yet</p>
-            <p className="text-sm text-muted-foreground">Create your first project to get started</p>
+        <Card className="border-dashed">
+          <CardContent className="flex flex-col items-center justify-center h-96">
+            <div className="text-center">
+              <h3 className="text-lg font-semibold text-foreground mb-2">No projects yet</h3>
+              <p className="text-muted-foreground mb-4">Create your first project to get started</p>
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="gap-2">
+                    <Plus className="w-4 h-4" />
+                    Create Project
+                  </Button>
+                </DialogTrigger>
+              </Dialog>
+            </div>
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {projects.map((project) => (
             <Card key={project.id} className="hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
+              <CardHeader>
+                <div className="flex items-start justify-between gap-2">
                   <div className="flex-1">
                     <CardTitle className="text-lg">{project.name}</CardTitle>
-                    <CardDescription className="text-xs mt-1">{project.location}</CardDescription>
+                    <CardDescription className="mt-1">{project.description}</CardDescription>
                   </div>
                   <Badge className={statusColors[project.status] || 'bg-gray-100 text-gray-800'}>
-                    {project.status.replace(/_/g, ' ')}
+                    {project.status}
                   </Badge>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
-                {project.description && (
-                  <p className="text-sm text-foreground">{project.description}</p>
+                {project.location && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <MapPin className="w-4 h-4" />
+                    {project.location}
+                  </div>
                 )}
-
-                <div className="space-y-2 pt-2 border-t border-border">
-                  {project.estimated_budget && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Budget:</span>
-                      <span className="font-semibold">₹{project.estimated_budget.toLocaleString()}</span>
-                    </div>
-                  )}
-                  {project.actual_cost && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Spent:</span>
-                      <span className="font-semibold">₹{project.actual_cost.toLocaleString()}</span>
-                    </div>
-                  )}
-                  {project.start_date && (
-                    <div className="flex items-center text-sm text-muted-foreground gap-2">
-                      <Calendar size={14} />
-                      {new Date(project.start_date).toLocaleDateString()}
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex gap-2 pt-4">
+                {project.start_date && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Calendar className="w-4 h-4" />
+                    {project.start_date} to {project.end_date || 'TBD'}
+                  </div>
+                )}
+                {project.estimated_budget > 0 && (
+                  <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                    <DollarSign className="w-4 h-4 text-green-600" />
+                    Budget: ₹{project.estimated_budget.toLocaleString()}
+                  </div>
+                )}
+                <div className="pt-2 flex gap-2">
                   <Button variant="outline" size="sm" className="flex-1">
-                    <Eye size={16} className="mr-1" />
-                    View
+                    View Details
                   </Button>
                   <Button variant="outline" size="sm" className="flex-1">
-                    <Edit2 size={16} className="mr-1" />
                     Edit
                   </Button>
                 </div>

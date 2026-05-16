@@ -32,38 +32,27 @@ export default function SettingsPage() {
 
   async function fetchUserData() {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      if (!user) {
-        router.push('/auth/login')
-        return
+      // DEMO MODE: Use demo user
+      const demoUser = {
+        id: 'demo-user-123',
+        email: 'demo@example.com',
+      }
+      const demoProfile = {
+        id: 'demo-user-123',
+        full_name: 'Demo User',
+        email: 'demo@example.com',
+        phone: '+91 9876543210',
+        role: 'admin',
       }
 
-      setUser(user)
-
-      // Fetch user profile
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
-
-      if (profile) {
-        setUserProfile(profile)
-        setFormData({
-          full_name: profile.full_name || '',
-          email: user.email || '',
-          phone: profile.phone || '',
-          role: profile.role || 'user',
-        })
-      } else {
-        setFormData((prev) => ({
-          ...prev,
-          email: user.email || '',
-        }))
-      }
+      setUser(demoUser)
+      setUserProfile(demoProfile)
+      setFormData({
+        full_name: demoProfile.full_name,
+        email: demoProfile.email,
+        phone: demoProfile.phone,
+        role: demoProfile.role,
+      })
     } catch (error) {
       console.error('Error fetching user data:', error)
     } finally {
