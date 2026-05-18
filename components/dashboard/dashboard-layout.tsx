@@ -65,13 +65,16 @@ export function DashboardLayout({ children, userProfile }: DashboardLayoutProps)
         } bg-sidebar border-r border-sidebar-border transition-all duration-300 flex flex-col`}
       >
         {/* Logo Area */}
-        <div className="h-20 border-b border-sidebar-border flex items-center justify-between px-4">
+        <div className="h-20 border-b border-sidebar-border flex items-center justify-between px-4 bg-gradient-to-r from-blue-50 to-blue-100">
           {sidebarOpen && (
-            <h1 className="font-bold text-lg text-sidebar-foreground">ERP</h1>
+            <div>
+              <h1 className="font-bold text-base text-blue-900">Rasheed & Co</h1>
+              <p className="text-xs text-blue-700 font-medium">Construction</p>
+            </div>
           )}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-1 hover:bg-sidebar-accent rounded-md text-sidebar-foreground"
+            className="p-1 hover:bg-blue-200 rounded-md text-blue-900"
           >
             {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
