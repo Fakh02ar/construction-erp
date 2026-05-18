@@ -9,7 +9,6 @@ const _geistMono = Geist_Mono({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: 'Construction ERP',
   description: 'Construction project management and financial tracking system',
-  generator: 'v0.app',
   icons: {
     icon: [
       {
